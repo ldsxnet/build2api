@@ -1,0 +1,71 @@
+# .github/workflows/docker-publish.yml
+name: Build and Push Docker Image to GHCR
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # =======================================================
+      # [修复点] 这里不再用 ${{ github.repository }} (你的仓库)
+      # 而是直接指定去原作者的仓库找文件 (Storeanthony/Cloud-Studio)
+      # 如果你的源头不是这个，请把下面的 "Storeanthony/Cloud-Studio" 
+      # 换成你 fork 的那个项目的名字
+      # =======================================================
+      - name: Get Camoufox Download URL
+        id: get_camoufox_url
+        run: |
+          TARGET_REPO="Ellinav/ais2api"
+          echo "正在从 $TARGET_REPO 获取浏览器文件..."
+          
+          URL=$(curl -s "https://api.github.com/repos/$TARGET_REPO/releases/latest" | grep "browser_download_url.*camoufox-linux.tar.gz" | cut -d : -f 2,3 | tr -d '", ')
+          
+          if [ -z "$URL" ]; then
+            echo "::error::在 $TARGET_REPO 的 Release 中没找到文件！"
+            exit 1
+          fi
+          
+          echo "CAMOUFOX_URL=$URL" >> $GITHUB_ENV
+          echo "Found URL: $URL"
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lowercase image name
+        run: |
+          echo "IMAGE_NAME_LOWER=${IMAGE_NAME,,}" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest
+          build-args: |
+            CAMOUFOX_URL=${{ env.CAMOUFOX_URL }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

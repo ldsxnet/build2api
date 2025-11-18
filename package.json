@@ -1,0 +1,12 @@
+{
+  "name": "aistudio-accounts-switch",
+  "version": "1.0.0",
+  "dependencies": {
+    "cookie-parser": "^1.4.6",
+    "playwright": "^1.53.1",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "ws": "^8.17.0",
+    "basic-auth": "^2.0.1"
+  }
+}

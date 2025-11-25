@@ -1,0 +1,19 @@
+name: Clear All Caches
+
+on:
+  workflow_dispatch: # 这是一个手动触发的按钮
+
+jobs:
+  clear-cache:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write  # 必须给这个权限才能删缓存
+    steps:
+      - name: Delete all caches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "正在获取缓存列表..."
+          # 使用 GitHub CLI 强制删除所有缓存
+          gh cache delete --all || echo "没有发现缓存或删除失败（可能已经空了）"
+          echo "清理完成！"

@@ -21,7 +21,10 @@ echo "===== 开始部署: $CONTAINER_NAME ====="
 
 # 1. 拉取最新的 Docker 镜像
 echo "--> 正在拉取最新镜像: $IMAGE_NAME..."
-docker pull $IMAGE_NAME
+if ! docker pull $IMAGE_NAME; then
+    echo "错误: 镜像拉取失败，停止部署。"
+    exit 1
+fi
 
 # 2. 停止并删除同名的旧容器
 echo "--> 正在停止并删除旧容器..."
@@ -47,6 +50,7 @@ if [ -d "./auth" ]; then
     
     # [核心修正] 在挂载前，自动修正目录权限
     echo "--> 正在为 'auth' 目录设置权限..."
+    # 注意：如果脚本以 root 运行，sudo 不是必须的，但保留它通常无害
     sudo chown -R 1000:1000 ./auth
     
     echo "--> 正在将 'auth' 目录挂载到容器中..."
@@ -67,14 +71,20 @@ fi
 # 使用数组展开来执行命令，确保参数正确传递
 docker run "${DOCKER_OPTS[@]}" "$IMAGE_NAME"
 
+# 4. 清理旧镜像 (新增逻辑)
+echo ""
+echo "--> [系统维护] 正在清理旧的悬空镜像..."
+# prune -f 会删除所有标签为 <none> 的镜像（即被新镜像覆盖掉的老镜像）
+# 这不会删除正在使用的镜像，非常安全
+docker image prune -f
 
-# 4. 检查容器状态
+# 5. 检查容器状态
 echo ""
 echo "--> 检查容器状态 (等待几秒钟让容器启动):"
 sleep 5
 docker ps | grep $CONTAINER_NAME
 
-# --- 新增：自动获取公网 IP 逻辑 ---
+# --- 自动获取公网 IP 逻辑 ---
 echo ""
 echo "--> 正在获取服务器公网 IP..."
 # 尝试通过 curl 获取 IP，设置超时时间为 3 秒，优先获取 IPv4
@@ -88,6 +98,5 @@ fi
 
 echo ""
 echo "===== 部署完成！====="
-# 修改了下面这一行，使用变量替换
 echo "服务应该正在运行在: http://${PUBLIC_IP}:${HOST_PORT}"
 echo "您可以通过 'docker logs -f $CONTAINER_NAME' 查看实时日志。"

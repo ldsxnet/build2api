@@ -1,0 +1,25 @@
+name: Nuke All Docker Images
+
+on:
+  workflow_dispatch: # 手动触发按钮
+
+jobs:
+  nuke-it-all:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write # 必须权限：允许删除包
+    
+    steps:
+      - name: Delete all package versions
+        uses: actions/delete-package-versions@v5
+        with:
+          # 【注意】这里填你的镜像名，根据你的截图是 build2api
+          # 如果你的仓库名和镜像名不一致，请修改这里
+          package-name: 'build2api'
+          package-type: 'container'
+          
+          # 保留几个版本？0 表示一个不留，全部杀光
+          min-versions-to-keep: 0
+          
+          # 是否只删无标签的？False 表示连 latest 也一起删
+          delete-only-untagged-versions: 'false'

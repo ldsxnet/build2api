@@ -2445,7 +2445,7 @@ class ProxyServerSystem extends EventEmitter {
     <title>代理控制台</title>
     <style>
         /* =========================================
-           1. 全局基础样式 (Global Variables & Reset)
+           1. 全局基础变量与组件
            ========================================= */
         :root {
             --bg-color: #f4f6f9;
@@ -2456,177 +2456,143 @@ class ProxyServerSystem extends EventEmitter {
             --success-color: #34c759;
             --border-color: #ebedf0;
         }
+        
         body { margin: 0; padding: 0; background: var(--bg-color); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--text-primary); }
         * { box-sizing: border-box; }
 
-        /* 通用组件样式 */
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0; }
+        /* 标题栏 */
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header h1 { font-size: 24px; font-weight: 700; margin: 0; }
         .status-badge { background: #e4e6eb; padding: 6px 12px; border-radius: 20px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
         .status-dot.active { background: var(--success-color); box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.2); }
 
-        .card { background: var(--card-bg); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); overflow: hidden; display: flex; flex-direction: column; }
+        /* 卡片通用样式 */
+        .card { background: var(--card-bg); border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 20px; overflow: hidden; display: flex; flex-direction: column; }
         .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); font-weight: 600; font-size: 16px; flex-shrink: 0; }
-        .card-body { padding: 0; flex: 1; overflow-y: auto; }
+        .card-body { padding: 0; }
 
-        .row-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border-color); }
+        /* 列表行样式 */
+        .row-item { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
         .row-item:last-child { border-bottom: none; }
-        .row-label { font-size: 14px; color: var(--text-primary); font-weight: 500; }
-        .row-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
-        .row-value { font-family: 'SF Mono', Consolas, monospace; font-size: 13px; color: var(--text-secondary); }
+        .row-label { font-size: 15px; color: var(--text-primary); }
+        .row-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; max-width: 300px; line-height: 1.4; }
+        .row-value { font-family: 'SF Mono', Consolas, monospace; font-size: 14px; color: var(--text-secondary); }
 
-        /* 开关组件 */
-        .switch { position: relative; display: inline-block; width: 46px; height: 26px; flex-shrink: 0; }
+        /* 开关控件 */
+        .switch { position: relative; display: inline-block; width: 50px; height: 28px; flex-shrink: 0; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #e9e9ea; transition: .3s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 22px; width: 22px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 2px; bottom: 2px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         input:checked + .slider { background-color: var(--accent-color); }
-        input:checked + .slider:before { transform: translateX(20px); }
+        input:checked + .slider:before { transform: translateX(22px); }
 
-        /* 按钮与输入框 */
-        .action-btn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 13px; white-space: nowrap; transition: 0.2s; }
+        /* 按钮与输入 */
+        .action-btn { background: var(--accent-color); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 500; cursor: pointer; font-size: 14px; white-space: nowrap; transition: 0.2s; }
         .action-btn:hover { opacity: 0.9; }
-        .num-input { width: 50px; padding: 5px; border: 1px solid #d1d1d6; border-radius: 6px; text-align: center; margin-right: 8px; }
+        .num-input { width: 60px; padding: 6px; border: 1px solid #d1d1d6; border-radius: 6px; text-align: center; margin-right: 10px; }
         
         select { 
-            padding: 8px 30px 8px 12px; border-radius: 8px; border: 1px solid #d1d1d6; background: #fff; font-size: 13px; 
+            padding: 8px 30px 8px 12px; border-radius: 8px; border: 1px solid #d1d1d6; background: #fff; font-size: 14px; 
             -webkit-appearance: none; 
             background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); 
             background-repeat: no-repeat; background-position: right 8px center; background-size: 12px;
         }
 
-        /* 日志基础样式 */
+        /* 日志区域基础 */
         .log-container { 
             background: #1e1e1e; color: #f0f0f0; padding: 15px; 
             font-family: 'SF Mono', Consolas, monospace; line-height: 1.5; 
-            white-space: pre-wrap; overflow-y: auto; flex: 1;
+            white-space: pre-wrap; overflow-y: auto; 
         }
+        
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 999; backdrop-filter: blur(5px); }
         .toast.show { opacity: 1; top: 30px; }
 
 
         /* =========================================
-           2. 桌面端专属样式 (Desktop Styles)
-           逻辑：铺满全屏，上方两卡片并排以节省垂直空间，下方日志填满剩余所有区域
+           2. 桌面端 (Desktop) 
+           - 双栏布局
+           - 允许滚动，但日志区域尽可能大
            ========================================= */
         @media (min-width: 769px) {
-            body, html { height: 100vh; overflow: hidden; /* 禁止body滚动，内容在内部滚动 */ }
+            .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
             
-            .container {
-                max-width: 1200px;
-                margin: 0 auto;
-                height: 100%;
-                padding: 20px;
-                display: flex;
-                flex-direction: column;
-            }
-
-            /* 上半部分布局：头部 + 两个操作面板 */
-            .top-section {
-                flex-shrink: 0; /* 禁止缩小 */
-                display: flex;
-                flex-direction: column;
-                margin-bottom: 20px;
-            }
-
+            /* 上半部分：并排两个卡片 */
             .panels-grid {
                 display: grid;
-                grid-template-columns: 1fr 1fr; /* 左右两栏，节省垂直高度 */
+                grid-template-columns: 1fr 1fr;
                 gap: 20px;
+                align-items: start; /* 防止高度被强制拉伸 */
             }
 
-            .card {
-                margin-bottom: 0; /* Grid布局不需要margin */
-                height: 100%; /* 卡片等高 */
+            /* 下半部分：日志 */
+            .log-card {
+                /* 
+                   高度逻辑：
+                   尝试占据屏幕剩余高度 (100vh - 约400px头部和间距)
+                   但最少不小于 500px，保证大屏舒服，小屏能滚
+                */
+                height: calc(100vh - 400px);
+                min-height: 500px; 
             }
-
-            /* 下半部分布局：日志区域 */
-            .log-card-wrapper {
-                flex: 1; /* 占据剩余所有高度 */
-                min-height: 0; /* Flex子元素滚动的关键 */
-                display: flex;
-                flex-direction: column;
-            }
-
-            .log-card-wrapper .card {
-                height: 100%;
-                display: flex;
-                flex-direction: column;
-            }
-            
             .log-container {
-                font-size: 13px; /* 桌面端字体稍大 */
-                height: 100%; /* 填满父容器 */
+                height: 100%;
+                font-size: 13px;
+                border-radius: 0 0 16px 16px;
             }
 
-            /* 账号选择区域 */
+            /* 账号选择器PC端样式 */
             .account-control { display: flex; align-items: center; gap: 10px; }
-            .account-control select { max-width: 200px; }
+            .account-control select { max-width: 250px; }
         }
 
 
         /* =========================================
-           3. 移动端专属样式 (Mobile Styles)
-           逻辑：垂直流式布局，重点解决选择框溢出问题
+           3. 移动端 (Mobile)
+           - 单栏堆叠
+           - 重点修复下拉框溢出
            ========================================= */
         @media (max-width: 768px) {
-            body { overflow-y: auto; min-height: 100vh; padding-bottom: 30px; }
+            .container { padding: 15px; margin-top: 10px; }
             
-            .container {
-                padding: 15px;
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
+            .panels-grid { display: block; } /* 恢复默认块级堆叠 */
 
-            .panels-grid {
-                display: flex;
-                flex-direction: column;
-                gap: 20px;
-            }
-
-            .log-card-wrapper {
-                height: 400px; /* 移动端给日志一个固定高度 */
-            }
-
-            .log-container { font-size: 11px; }
-
-            /* 移动端列表项布局调整 */
-            .row-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-            }
+            .row-item { flex-direction: column; align-items: flex-start; gap: 10px; }
             
-            /* 让每行的操作区（右侧）占满宽度并两端对齐 */
+            /* 操作区（右侧）占满整行 */
             .row-item > div:last-child:not(:first-child) {
                 width: 100%;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
             }
-            
+            .row-value { margin-top: 5px; }
+
             /* 
-               [重点修复] 账号选择器智能适配 
-               使用 flex: 1 和 min-width: 0 强迫 select 收缩，
-               确保右侧按钮不被挤出屏幕 
+               [关键修复] 账号选择器防溢出逻辑 
+               flex: 1 + width: 0 强制收缩
             */
             .account-control {
                 width: 100%;
                 display: flex;
-                gap: 8px; /* 间距变小 */
+                gap: 8px;
                 align-items: center;
             }
-            
             .account-control select {
-                flex: 1;        /* 占据剩余空间 */
-                width: 0;       /* 强制触发flex收缩计算 */
-                min-width: 0;   /* 允许内容截断 */
+                flex: 1;      /* 占据剩余空间 */
+                width: 0;     /* 触发收缩计算 */
+                min-width: 0; /* 允许截断 */
             }
-            
             .account-control .action-btn {
-                flex-shrink: 0; /* 按钮禁止压缩 */
+                flex-shrink: 0; /* 按钮不要被挤扁 */
+            }
+
+            /* 移动端日志高度固定，不占太多屏幕 */
+            .log-container {
+                height: 350px;
+                font-size: 11px;
+                border-radius: 0 0 16px 16px;
             }
         }
     </style>
@@ -2635,119 +2601,112 @@ class ProxyServerSystem extends EventEmitter {
     <div class="toast" id="toast">操作已保存</div>
     
     <div class="container">
-        <!-- 顶部区域：标题 + 操作面板 -->
-        <div class="top-section">
-            <div class="header">
-                <h1>代理控制台</h1>
-                <div class="status-badge">
-                    <div class="status-dot" id="browserStatusDot"></div>
-                    <span id="browserStatusText">Checking...</span>
-                </div>
+        <!-- 头部 -->
+        <div class="header">
+            <h1>代理控制台</h1>
+            <div class="status-badge">
+                <div class="status-dot" id="browserStatusDot"></div>
+                <span id="browserStatusText">Checking...</span>
             </div>
+        </div>
 
-            <!-- 操作面板网格 (桌面端左右并排，移动端上下堆叠) -->
-            <div class="panels-grid">
-                <!-- Card 1: 系统配置 -->
-                <div class="card">
-                    <div class="card-header">系统配置</div>
-                    <div class="card-body">
-                        <div class="row-item">
-                            <div>
-                                <div class="row-label">流式响应 (Stream)</div>
-                                <div class="row-desc">开启: Real / 关闭: Fake</div>
-                            </div>
-                            <div> <!-- 包装一层div用于移动端右侧对齐 -->
-                                <label class="switch">
-                                    <input type="checkbox" id="streamModeSwitch" onchange="toggleStreamMode()">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
+        <!-- 功能面板区 -->
+        <div class="panels-grid">
+            <!-- 系统配置 -->
+            <div class="card">
+                <div class="card-header">系统配置</div>
+                <div class="card-body">
+                    <div class="row-item">
+                        <div>
+                            <div class="row-label">流式响应模式 (Stream Mode)</div>
+                            <div class="row-desc">开启为 Real (真流式)，关闭为 Fake (伪流式)</div>
                         </div>
-                        <div class="row-item">
-                            <div>
-                                <div class="row-label">强制 OAI 格式推理</div>
-                                <div class="row-desc">注入 thinkingConfig</div>
-                            </div>
-                            <div>
-                                <label class="switch">
-                                    <input type="checkbox" id="reasoningSwitch" onchange="toggleReasoning()">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
+                        <div>
+                            <label class="switch">
+                                <input type="checkbox" id="streamModeSwitch" onchange="toggleStreamMode()">
+                                <span class="slider"></span>
+                            </label>
                         </div>
-                        <div class="row-item">
-                            <div>
-                                <div class="row-label">强制原生格式推理</div>
-                                <div class="row-desc">Gemini 原生思考</div>
-                            </div>
-                            <div>
-                                <label class="switch">
-                                    <input type="checkbox" id="nativeReasoningSwitch" onchange="toggleNativeReasoning()">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
+                    </div>
+                    <div class="row-item">
+                        <div>
+                            <div class="row-label">强制 OAI 格式推理</div>
+                            <div class="row-desc">为 OpenAI 格式请求注入 thinkingConfig</div>
                         </div>
-                        <div class="row-item">
-                            <div>
-                                <div class="row-label">模型重定向</div>
-                                <div class="row-desc">2.5-pro -> 3.0-pro</div>
-                            </div>
-                            <div>
-                                <label class="switch">
-                                    <input type="checkbox" id="redirectSwitch" onchange="toggleRedirect()">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
+                        <div>
+                            <label class="switch">
+                                <input type="checkbox" id="reasoningSwitch" onchange="toggleReasoning()">
+                                <span class="slider"></span>
+                            </label>
                         </div>
-                        <div class="row-item">
-                            <div>
-                                <div class="row-label">截断自动续写</div>
-                                <div class="row-desc">尝试继续生成</div>
-                            </div>
-                            <div style="display: flex; align-items: center;">
-                                <input type="number" class="num-input" id="resumeLimitInput" value="3" min="1" max="10">
-                                <label class="switch">
-                                    <input type="checkbox" id="resumeSwitch" onchange="toggleResume()">
-                                    <span class="slider"></span>
-                                </label>
-                            </div>
+                    </div>
+                    <div class="row-item">
+                        <div>
+                            <div class="row-label">强制原生格式推理</div>
+                            <div class="row-desc">为 Gemini 原生请求注入 thinkingConfig</div>
+                        </div>
+                        <div>
+                            <label class="switch">
+                                <input type="checkbox" id="nativeReasoningSwitch" onchange="toggleNativeReasoning()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="row-item">
+                        <div>
+                            <div class="row-label">模型版本重定向</div>
+                            <div class="row-desc">将 gemini-2.5-pro 自动重定向至 3.0-pro</div>
+                        </div>
+                        <div>
+                            <label class="switch">
+                                <input type="checkbox" id="redirectSwitch" onchange="toggleRedirect()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="row-item">
+                        <div>
+                            <div class="row-label">截断自动续写</div>
+                            <div class="row-desc">内容被截断时自动尝试继续生成</div>
+                        </div>
+                        <div style="display: flex; align-items: center;">
+                            <input type="number" class="num-input" id="resumeLimitInput" value="3" min="1" max="10" placeholder="次">
+                            <label class="switch">
+                                <input type="checkbox" id="resumeSwitch" onchange="toggleResume()">
+                                <span class="slider"></span>
+                            </label>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Card 2: 账号管理 -->
-                <div class="card">
-                    <div class="card-header">账号管理</div>
-                    <div class="card-body">
-                        <div class="row-item">
-                            <div>
-                                <div class="row-label">当前状态</div>
-                                <div class="row-desc" id="usageStats">加载中...</div>
-                            </div>
-                            <div class="row-value" id="currentAccountBadge">#--</div>
+            <!-- 账号管理 -->
+            <div class="card">
+                <div class="card-header">账号管理</div>
+                <div class="card-body">
+                    <div class="row-item">
+                        <div>
+                            <div class="row-label">当前账号状态</div>
+                            <div class="row-desc" id="usageStats">加载中...</div>
                         </div>
-                        <div class="row-item">
-                            <div class="row-label">手动切换账号</div>
-                            <!-- 
-                                [修复] 专门的容器 .account-control 
-                                用于处理移动端下拉框过长的问题 
-                            -->
-                            <div class="account-control">
-                                <select id="accountSelector"></select>
-                                <button class="action-btn" onclick="switchAccount()">切换</button>
-                            </div>
+                        <div class="row-value" id="currentAccountBadge">#--</div>
+                    </div>
+                    <div class="row-item">
+                        <div class="row-label">手动切换账号</div>
+                        <!-- 账号选择控件容器 -->
+                        <div class="account-control">
+                            <select id="accountSelector"></select>
+                            <button class="action-btn" onclick="switchAccount()">切换</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 底部区域：实时日志 (桌面端自动填满剩余空间) -->
-        <div class="log-card-wrapper">
-            <div class="card" style="height: 100%;"> <!-- 强制卡片高度100%以适应wrapper -->
-                <div class="card-header">实时日志</div>
-                <div class="log-container" id="logContainer">Waiting for logs...</div>
-            </div>
+        <!-- 日志卡片 (单独放在下面) -->
+        <div class="card log-card">
+            <div class="card-header">实时日志</div>
+            <div class="log-container" id="logContainer">Waiting for logs...</div>
         </div>
     </div>
 
@@ -2797,7 +2756,7 @@ class ProxyServerSystem extends EventEmitter {
 
         async function switchAccount() {
             const idx = document.getElementById('accountSelector').value;
-            if(!confirm('确定切换到账号 #' + idx + ' 吗？')) return;
+            if(!confirm('确定切换到账号 #' + idx + ' 吗？这会重置当前浏览器会话。')) return;
             showToast('正在切换...');
             try {
                 const res = await fetch('/api/switch-account', {
@@ -2816,7 +2775,7 @@ class ProxyServerSystem extends EventEmitter {
                 const s = data.status;
                 const dot = document.getElementById('browserStatusDot');
                 dot.className = s.browserConnected ? 'status-dot active' : 'status-dot';
-                document.getElementById('browserStatusText').textContent = s.browserConnected ? '服务运行中' : '未连接';
+                document.getElementById('browserStatusText').textContent = s.browserConnected ? '服务运行中' : '浏览器未连接';
 
                 document.getElementById('streamModeSwitch').checked = s.streamingMode.startsWith('real');
                 document.getElementById('reasoningSwitch').checked = s.enableReasoning;
@@ -2835,8 +2794,8 @@ class ProxyServerSystem extends EventEmitter {
                     const opt = document.createElement('option');
                     opt.value = acc.index;
                     let name = acc.name || 'Account';
-                    // 简单的JS截断，虽然CSS已经处理了，但为了下拉列表美观稍微处理一下
-                    if(name.length > 30) name = name.substring(0, 28) + '...';
+                    // 仅在下拉框文本层面做轻微截断，防止选项把框撑得太难看
+                    if(name.length > 50) name = name.substring(0, 48) + '...';
                     opt.textContent = '#' + acc.index + ' - ' + name;
                     if(acc.index == s.currentAuthIndex) opt.textContent += ' (当前)';
                     selector.appendChild(opt);
